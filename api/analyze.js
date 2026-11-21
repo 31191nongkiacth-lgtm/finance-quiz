@@ -54,7 +54,7 @@ export default async function handler(req, res) {
 - ข้อที่ตอบผิด: ${wrongQuestions.length > 0 ? wrongQuestions.join(', ') : 'ไม่มี (ตอบถูกทุกข้อ)'}`;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3.8-flash',
       contents: userPrompt,
       config: {
         systemInstruction: systemInstruction,
