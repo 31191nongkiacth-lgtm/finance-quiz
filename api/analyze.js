@@ -8,6 +8,29 @@ const ANSWER_KEY = {
   q9: 'B', q10: 'B', q11: 'C', q12: 'B', q13: 'B', q14: 'B'
 };
 
+// โมเดลหลัก และโมเดลสำรองเมื่อตัวหลักไม่ว่าง
+const MODELS = ['gemini-3.8-flash', 'gemini-3.5-flash-lite'];
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// ลองซ้ำเมื่อเจอ 503/429 (ชั่วคราว) และสลับไปโมเดลสำรองเมื่อยังไม่สำเร็จหรือเจอ 404
+async function generateWithFallback(contents, config) {
+  let lastError;
+  for (const model of MODELS) {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        return await ai.models.generateContent({ model, contents, config });
+      } catch (err) {
+        lastError = err;
+        console.error(`Gemini error (${model}, attempt ${attempt + 1}):`, err?.status || err);
+        if (err?.status === 404) break; // ไม่พบโมเดล ข้ามไปตัวถัดไปทันที
+        if (err?.status !== 503 && err?.status !== 429) throw err; // error อื่นไม่ต้องลองซ้ำ
+        await sleep(700 * (attempt + 1));
+      }
+    }
+  }
+  throw lastError;
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method Not Allowed' });
@@ -53,13 +76,9 @@ export default async function handler(req, res) {
 - คะแนนที่ได้: ${score} เต็ม 12 คะแนน
 - ข้อที่ตอบผิด: ${wrongQuestions.length > 0 ? wrongQuestions.join(', ') : 'ไม่มี (ตอบถูกทุกข้อ)'}`;
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.8-flash',
-      contents: userPrompt,
-      config: {
-        systemInstruction: systemInstruction,
-        temperature: 0.7,
-      }
+    const response = await generateWithFallback(userPrompt, {
+      systemInstruction: systemInstruction,
+      temperature: 0.7,
     });
 
     return res.status(200).json({ advice: response.text });
