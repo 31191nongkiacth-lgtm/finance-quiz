@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>แบบทดสอบความรู้ทางการเงินและการออมสำหรับนักเรียน</title>
+  <style>
+    body {
+      font-family: 'Sarabun', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: #f4f7f6;
+      color: #333;
+      line-height: 1.6;
+      margin: 0;
+      padding: 20px;
+    }
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+      background: #fff;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+    h1 {
+      color: #1a5f7a;
+      font-size: 1.6rem;
+      text-align: center;
+      margin-bottom: 10px;
+    }
+    p.subtitle {
+      text-align: center;
+      color: #666;
+      font-size: 0.95rem;
+      margin-bottom: 25px;
+    }
+    .question-block {
+      margin-bottom: 22px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid #eee;
+    }
+    .question-title {
+      font-weight: 600;
+      margin-bottom: 10px;
+      color: #222;
+    }
+    label.option {
+      display: block;
+      margin: 6px 0;
+      padding: 8px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    label.option:hover {
+      background-color: #f0f8ff;
+    }
+    input[type="radio"] {
+      margin-right: 8px;
+    }
+    .consent-box {
+      background: #f9fafb;
+      padding: 15px;
+      border-radius: 8px;
+      margin: 20px 0;
+      font-size: 0.9rem;
+    }
+    button {
+      width: 100%;
+      padding: 14px;
+      background-color: #1a5f7a;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1.05rem;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    button:disabled {
+      background-color: #95a5a6;
+      cursor: not-allowed;
+    }
+    #loading {
+      display: none;
+      text-align: center;
+      margin-top: 20px;
+      color: #1a5f7a;
+      font-weight: 600;
+    }
+    #error-msg {
+      display: none;
+      margin-top: 20px;
+      padding: 15px;
+      background: #fee2e2;
+      color: #b91c1c;
+      border-radius: 8px;
+    }
+    #result-box {
+      display: none;
+      margin-top: 25px;
+      padding: 20px;
+      background: #eef9f6;
+      border-left: 5px solid #10b981;
+      border-radius: 8px;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>แบบประเมินความรู้ทางการเงินและการออม</h1>
+    <p class="subtitle">ตอบคำถามทั้งหมด 14 ข้อ เพื่อรับคำแนะนำจาก AI โค้ชการเงินส่วนบุคคล</p>
+
+    <form id="quizForm">
+      <!-- ข้อ 1 -->
+      <div class="question-block">
+        <div class="question-title">1. ระดับชั้นของคุณ:</div>
+        <label class="option"><input type="radio" name="q1" value="ม.4" required> ม.4</label>
+        <label class="option"><input type="radio" name="q1" value="ม.5"> ม.5</label>
+        <label class="option"><input type="radio" name="q1" value="ม.6"> ม.6</label>
+      </div>
+
+      <!-- ข้อ 2 -->
+      <div class="question-block">
+        <div class="question-title">2. เพศของคุณ:</div>
+        <label class="option"><input type="radio" name="q2" value="ชาย" required> ชาย</label>
+        <label class="option"><input type="radio" name="q2" value="หญิง"> หญิง</label>
+      </div>
+
+      <!-- ข้อ 3 -->
+      <div class="question-block">
+        <div class="question-title">3. ข้อใดให้ความหมายของ "รายรับ" และ "รายจ่าย" ได้ถูกต้องที่สุด?</div>
+        <label class="option"><input type="radio" name="q3" value="A" required> A. รายรับคือเงินที่ขอยืมเพื่อน ส่วนรายจ่ายคือเงินที่เอาไปคืน</label>
+        <label class="option"><input type="radio" name="q3" value="B"> B. รายรับคือเงินที่ได้รับเข้ามา ส่วนรายจ่ายคือเงินที่ถูกใช้จ่ายออกไป</label>
+        <label class="option"><input type="radio" name="q3" value="C"> C. รายรับคือเงินในบัญชีออมทรัพย์ ส่วนรายจ่ายคือเงินสดในกระเป๋า</label>
+        <label class="option"><input type="radio" name="q3" value="D"> D. รายรับคือเงินที่เหลือตอนสิ้นเดือน ส่วนรายจ่ายคือราคาสินค้าที่อยากได้</label>
+      </div>
+
+      <!-- ข้อ 4 -->
+      <div class="question-block">
+        <div class="question-title">4. เมื่อราคาสินค้าและบริการโดยทั่วไปปรับตัวสูงขึ้น ส่งผลให้เงินจำนวนเท่าเดิมซื้อของได้น้อยลง ภาวะนี้เรียกว่าอะไร?</div>
+        <label class="option"><input type="radio" name="q4" value="A" required> A. เงินฝืด (Deflation)</label>
+        <label class="option"><input type="radio" name="q4" value="B"> B. เงินเฟ้อ (Inflation)</label>
+        <label class="option"><input type="radio" name="q4" value="C"> C. เงินปันผล (Dividend)</label>
+        <label class="option"><input type="radio" name="q4" value="D"> D. เงินสำรอง (Reserve)</label>
+      </div>
+
+      <!-- ข้อ 5 -->
+      <div class="question-block">
+        <div class="question-title">5. สินค้าหรือค่าใช้จ่ายในข้อใดจัดอยู่ในกลุ่ม "ความจำเป็น (Needs)" สำหรับนักเรียนมากที่สุด?</div>
+        <label class="option"><input type="radio" name="q5" value="A" required> A. ค่าอาหารกลางวันและค่าเดินทางไปโรงเรียน</label>
+        <label class="option"><input type="radio" name="q5" value="B"> B. บัตรคอนเสิร์ตศิลปินคนโปรด</label>
+        <label class="option"><input type="radio" name="q5" value="C"> C. เสื้อผ้าแฟชั่นตามกระแสในโซเชียล</label>
+        <label class="option"><input type="radio" name="q5" value="D"> D. ไอเทมเติมเกมออนไลน์</label>
+      </div>
+
+      <!-- ข้อ 6 -->
+      <div class="question-block">
+        <div class="question-title">6. ข้อใดคือวัตถุประสงค์หลักของการทำ "บัญชีรายรับ-รายจ่าย"?</div>
+        <label class="option"><input type="radio" name="q6" value="A" required> A. เพื่ออวดเพื่อนว่าเรามีเงินเก็บเยอะ</label>
+        <label class="option"><input type="radio" name="q6" value="B"> B. เพื่อให้รู้พฤติกรรมการใช้เงินของตนเอง และควบคุมไม่ให้ใช้เงินเกินตัว</label>
+        <label class="option"><input type="radio" name="q6" value="C"> C. เพื่อใช้ยื่นกู้เงินกับธนาคารในอนาคตเท่านั้น</label>
+        <label class="option"><input type="radio" name="q6" value="D"> D. เพื่อคำนวณภาษีเงินได้ประจำปีของนักเรียน</label>
+      </div>
+
+      <!-- ข้อ 7 -->
+      <div class="question-block">
+        <div class="question-title">7. หากซื้อสินค้าด้วย "บัตรเครดิต" หรือ "การผ่อนชำระ" ข้อใดคือสิ่งที่ควรระวังมากที่สุด?</div>
+        <label class="option"><input type="radio" name="q7" value="A" required> A. ได้รับของช้ากว่าการจ่ายด้วยเงินสด</label>
+        <label class="option"><input type="radio" name="q7" value="B"> B. หากชำระไม่ตรงเวลาหรือจ่ายขั้นต่ำ จะเกิดดอกเบี้ยสะสมและกลายเป็นหนี้สิน</label>
+        <label class="option"><input type="radio" name="q7" value="C"> C. สินค้าที่ผ่อนชำระมักจะไม่มีการรับประกัน</label>
+        <label class="option"><input type="radio" name="q7" value="D"> D. ไม่สามารถนำไปใช้ซื้อของออนไลน์ได้</label>
+      </div>
+
+      <!-- ข้อ 8 -->
+      <div class="question-block">
+        <div class="question-title">8. การกระทำในข้อใดถือเป็น "การลงทุนเพื่อสร้างผลตอบแทน" แตกต่างจากการใช้จ่ายทั่วไป?</div>
+        <label class="option"><input type="radio" name="q8" value="A" required> A. การซื้อโทรศัพท์มือถือรุ่นใหม่ล่าสุดทุกปี</label>
+        <label class="option"><input type="radio" name="q8" value="B"> B. การซื้อชานมไข่มุกดื่มทุกวันหลังเลิกเรียน</label>
+        <label class="option"><input type="radio" name="q8" value="C"> C. การซื้อหนังสือพัฒนาทักษะ หรือลงทุนในกองทุนรวมตามความเสี่ยงที่รับได้</label>
+        <label class="option"><input type="radio" name="q8" value="D"> D. การเติมเงินซื้อสติ๊กเกอร์แชท</label>
+      </div>
+
+      <!-- ข้อ 9 -->
+      <div class="question-block">
+        <div class="question-title">9. สมการการออมเงินที่ถูกต้องตามหลักการวางแผนการเงินส่วนบุคคลคือข้อใด?</div>
+        <label class="option"><input type="radio" name="q9" value="A" required> A. รายรับ – รายจ่าย = เงินออม</label>
+        <label class="option"><input type="radio" name="q9" value="B"> B. รายรับ – เงินออม = รายจ่าย</label>
+        <label class="option"><input type="radio" name="q9" value="C"> C. รายจ่าย – เงินออม = รายรับ</label>
+        <label class="option"><input type="radio" name="q9" value="D"> D. เงินออม + รายจ่าย = หนี้สิน</label>
+      </div>
+
+      <!-- ข้อ 10 -->
+      <div class="question-block">
+        <div class="question-title">10. ข้อใดคือความหมายและประโยชน์ของ "เงินสำรองฉุกเฉิน"?</div>
+        <label class="option"><input type="radio" name="q10" value="A" required> A. เงินเก็บไว้สำหรับซื้อของลดราคาช่วงเทศกาล</label>
+        <label class="option"><input type="radio" name="q10" value="B"> B. เงินเก็บที่แยกไว้ใช้เฉพาะยามเกิดเหตุไม่คาดฝัน เช่น เจ็บป่วย หรือของใช้จำเป็นพัง</label>
+        <label class="option"><input type="radio" name="q10" value="C"> C. เงินเก็บไว้ให้เพื่อนยืมเวลาเดือดร้อน</label>
+        <label class="option"><input type="radio" name="q10" value="D"> D. เงินที่นำไปเสี่ยงโชคเพื่อหวังรวยทางลัด</label>
+      </div>
+
+      <!-- ข้อ 11 -->
+      <div class="question-block">
+        <div class="question-title">11. ตามหลักการจัดสรรเงินแบบ 50 / 30 / 20 ตัวเลข "20%" หมายถึงสัดส่วนของเงินส่วนใด?</div>
+        <label class="option"><input type="radio" name="q11" value="A" required> A. ค่าใช้จ่ายจำเป็นในชีวิตประจำวัน</label>
+        <label class="option"><input type="radio" name="q11" value="B"> B. ค่าใช้จ่ายเพื่อความบันเทิงและรางวัลชีวิต</label>
+        <label class="option"><input type="radio" name="q11" value="C"> C. เงินออมและการลงทุนเพื่ออนาคต</label>
+        <label class="option"><input type="radio" name="q11" value="D"> D. เงินสำหรับบริจาคและทำบุญ</label>
+      </div>
+
+      <!-- ข้อ 12 -->
+      <div class="question-block">
+        <div class="question-title">12. ข้อใดคือความหมายของ "ดอกเบี้ยทบต้น (Compound Interest)" ในการออมเงิน?</div>
+        <label class="option"><input type="radio" name="q12" value="A" required> A. ดอกเบี้ยที่คิดจากเงินต้นเริ่มต้นก้อนแรกเพียงอย่างเดียวทุกปี</label>
+        <label class="option"><input type="radio" name="q12" value="B"> B. ดอกเบี้ยที่นำเอาดอกเบี้ยของงวดก่อนหน้ามารวมกับเงินต้น แล้วคิดดอกเบี้ยเพิ่มในงวดถัดไป</label>
+        <label class="option"><input type="radio" name="q12" value="C"> C. ดอกเบี้ยที่ธนาคารหักเป็นค่าธรรมเนียมรักษาบัญชี</label>
+        <label class="option"><input type="radio" name="q12" value="D"> D. ดอกเบี้ยที่ได้รับเมื่อถอนเงินออกจากบัญชีจนหมด</label>
+      </div>
+
+      <!-- ข้อ 13 -->
+      <div class="question-block">
+        <div class="question-title">13. วิธีใดช่วยให้เด็กนักเรียนสามารถ "ออมเงินให้สำเร็จตามเป้าหมาย" ได้ง่ายที่สุด?</div>
+        <label class="option"><input type="radio" name="q13" value="A" required> A. เหลือเงินเท่าไหร่ตอนเย็นค่อยหยอดกระปุก ถ้าไม่เหลือก็ไม่ออม</label>
+        <label class="option"><input type="radio" name="q13" value="B"> B. ตั้งเป้าหมายให้ชัดเจน แยกบัญชีออมออกจากบัญชีใช้จ่าย และหักออมทันทีที่ได้เงิน</label>
+        <label class="option"><input type="radio" name="q13" value="C"> C. เก็บเงินสดทั้งหมดไว้ในกระเป๋าสตางค์ใบเดียวกับเงินที่ใช้ซื้อของ</label>
+        <label class="option"><input type="radio" name="q13" value="D"> D. รอให้เรียนจบและมีงานทำก่อนจึงค่อยเริ่มฝึกออมเงิน</label>
+      </div>
+
+      <!-- ข้อ 14 -->
+      <div class="question-block">
+        <div class="question-title">14. หากต้องการออมเงินโดยเน้น "ความปลอดภัยของเงินต้นสูงสุด และสามารถถอนมาใช้ยามฉุกเฉินได้สะดวก" ควรเลือกวิธีใด?</div>
+        <label class="option"><input type="radio" name="q14" value="A" required> A. ซื้อหุ้นรายตัวที่มีความผันผวนสูง</label>
+        <label class="option"><input type="radio" name="q14" value="B"> B. ฝากในบัญชีเงินฝากออมทรัพย์ของธนาคาร หรือสลากออมสิน</label>
+        <label class="option"><input type="radio" name="q14" value="C"> C. นำเงินไปลงทุนในสินทรัพย์ดิจิทัล (คริปโตเคอร์เรนซี)</label>
+        <label class="option"><input type="radio" name="q14" value="D"> D. ฝากเงินไว้กับเพื่อนสนิท</label>
+      </div>
+
+      <div class="consent-box">
+        <label>
+          <input type="checkbox" id="consent" required>
+          ยินยอมให้ส่งคำตอบนี้ไปยังระบบ AI เพื่อประมวลผลคำแนะนำ (ระบบไม่บันทึกข้อมูลส่วนบุคคลของคุณ)
+        </label>
+      </div>
+
+      <button type="submit" id="submitBtn">ส่งคำตอบและรับคำแนะนำจาก AI</button>
+    </form>
+
+    <div id="loading">⏳ กำลังวิเคราะห์คำตอบของคุณด้วย AI กรุณารอสักครู่...</div>
+    <div id="error-msg"></div>
+    <div id="result-box"></div>
+  </div>
+
+  <script>
+    document.getElementById('quizForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const consent = document.getElementById('consent').checked;
+      if (!consent) {
+        alert('กรุณาติ๊กยินยอมก่อนส่งคำตอบ');
+        return;
+      }
+
+      const formData = new FormData(e.target);
+      const answers = {};
+      for (let [key, value] of formData.entries()) {
+        answers[key] = value;
+      }
+
+      const submitBtn = document.getElementById('submitBtn');
+      const loading = document.getElementById('loading');
+      const errorMsg = document.getElementById('error-msg');
+      const resultBox = document.getElementById('result-box');
+
+      submitBtn.disabled = true;
+      loading.style.display = 'block';
+      errorMsg.style.display = 'none';
+      resultBox.style.display = 'none';
+
+      try {
+        const response = await fetch('/api/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ answers })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'เกิดข้อผิดพลาดในการเชื่อมต่อกับ AI');
+        }
+
+        resultBox.textContent = data.advice;
+        resultBox.style.display = 'block';
+        resultBox.scrollIntoView({ behavior: 'smooth' });
+      } catch (err) {
+        errorMsg.textContent = 'ขออภัย: ' + err.message + ' กรุณาลองใหม่อีกครั้ง';
+        errorMsg.style.display = 'block';
+      } finally {
+        submitBtn.disabled = false;
+        loading.style.display = 'none';
+      }
+    });
+  </script>
+</body>
+</html>
