@@ -10,21 +10,32 @@ const ANSWER_KEY = {
 
 // โมเดลหลัก และโมเดลสำรองเมื่อตัวหลักไม่ว่าง
 const MODELS = ['gemini-3.8-flash', 'gemini-3.5-flash-lite'];
+const CALL_TIMEOUT_MS = 12000;   // รอแต่ละครั้งไม่เกิน 12 วินาที
+const TOTAL_BUDGET_MS = 28000;   // รวมทุกครั้งไม่เกิน 28 วินาที
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-// ลองซ้ำเมื่อเจอ 503/429 (ชั่วคราว) และสลับไปโมเดลสำรองเมื่อยังไม่สำเร็จหรือเจอ 404
+// ลองซ้ำเมื่อเจอ 503/429/timeout แล้วสลับไปโมเดลสำรอง โดยมีเพดานเวลารวม
 async function generateWithFallback(contents, config) {
+  const startedAt = Date.now();
   let lastError;
   for (const model of MODELS) {
-    for (let attempt = 0; attempt < 3; attempt++) {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      if (Date.now() - startedAt > TOTAL_BUDGET_MS - CALL_TIMEOUT_MS) {
+        throw lastError || new Error('timeout budget exceeded');
+      }
       try {
-        return await ai.models.generateContent({ model, contents, config });
+        return await ai.models.generateContent({
+          model,
+          contents,
+          config: { ...config, httpOptions: { timeout: CALL_TIMEOUT_MS } },
+        });
       } catch (err) {
         lastError = err;
-        console.error(`Gemini error (${model}, attempt ${attempt + 1}):`, err?.status || err);
+        console.error(`Gemini error (${model}, attempt ${attempt + 1}):`, err?.status || err?.message || err);
         if (err?.status === 404) break; // ไม่พบโมเดล ข้ามไปตัวถัดไปทันที
-        if (err?.status !== 503 && err?.status !== 429) throw err; // error อื่นไม่ต้องลองซ้ำ
-        await sleep(700 * (attempt + 1));
+        const retryable = err?.status === 503 || err?.status === 429 || !err?.status;
+        if (!retryable) throw err; // error อื่น (เช่น key ผิด) ไม่ต้องลองซ้ำ
+        await sleep(600);
       }
     }
   }
