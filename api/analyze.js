@@ -2,43 +2,55 @@ import { GoogleGenAI } from '@google/genai';
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-// เฉลยข้อ 3 - 14 เพื่อให้ AI ประเมินคะแนนได้แม่นยำ
+// เฉลยข้อ 3 - 14 (12 คะแนน)
 const ANSWER_KEY = {
   q3: 'B', q4: 'B', q5: 'A', q6: 'B', q7: 'B', q8: 'C',
   q9: 'B', q10: 'B', q11: 'C', q12: 'B', q13: 'B', q14: 'B'
 };
 
-// โมเดลหลัก และโมเดลสำรองเมื่อตัวหลักไม่ว่าง
-const MODELS = ['gemini-3.8-flash', 'gemini-3.5-flash-lite'];
-const CALL_TIMEOUT_MS = 12000;   // รอแต่ละครั้งไม่เกิน 12 วินาที
-const TOTAL_BUDGET_MS = 28000;   // รวมทุกครั้งไม่เกิน 28 วินาที
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const MODELS = ['gemini-2.5-flash', 'gemini-3.5-flash-lite'];
+const ATTEMPT_TIMEOUT_MS = 12000; // จำกัดเวลาต่อรอบ 12 วินาที เพื่อไม่ให้เกิน Deadline
 
-// ลองซ้ำเมื่อเจอ 503/429/timeout แล้วสลับไปโมเดลสำรอง โดยมีเพดานเวลารวม
-async function generateWithFallback(contents, config) {
-  const startedAt = Date.now();
+function callWithTimeout(promise, ms) {
+  let timer;
+  const timeoutPromise = new Promise((_, reject) => {
+    timer = setTimeout(() => {
+      reject(new Error(`Timeout after ${ms}ms`));
+    }, ms);
+  });
+
+  return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timer));
+}
+
+async function generateWithFallback(userPrompt, systemInstruction) {
   let lastError;
-  for (const model of MODELS) {
-    for (let attempt = 0; attempt < 2; attempt++) {
-      if (Date.now() - startedAt > TOTAL_BUDGET_MS - CALL_TIMEOUT_MS) {
-        throw lastError || new Error('timeout budget exceeded');
-      }
-      try {
-        return await ai.models.generateContent({
+
+  for (let i = 0; i < MODELS.length; i++) {
+    const model = MODELS[i];
+    try {
+      const response = await callWithTimeout(
+        ai.models.generateContent({
           model,
-          contents,
-          config: { ...config, httpOptions: { timeout: CALL_TIMEOUT_MS } },
-        });
-      } catch (err) {
-        lastError = err;
-        console.error(`Gemini error (${model}, attempt ${attempt + 1}):`, err?.status || err?.message || err);
-        if (err?.status === 404) break; // ไม่พบโมเดล ข้ามไปตัวถัดไปทันที
-        const retryable = err?.status === 503 || err?.status === 429 || !err?.status;
-        if (!retryable) throw err; // error อื่น (เช่น key ผิด) ไม่ต้องลองซ้ำ
-        await sleep(600);
+          contents: userPrompt,
+          config: {
+            systemInstruction,
+            temperature: 0.6,
+            maxOutputTokens: 900,
+          },
+        }),
+        ATTEMPT_TIMEOUT_MS
+      );
+
+      if (response?.text) {
+        return response.text;
       }
+      throw new Error('Empty response text from Gemini');
+    } catch (err) {
+      lastError = err;
+      console.error(`Gemini error (${model}, attempt ${i + 1}):`, err?.message || err);
     }
   }
+
   throw lastError;
 }
 
@@ -50,7 +62,6 @@ export default async function handler(req, res) {
   try {
     const { answers } = req.body || {};
 
-    // ตรวจสอบความถูกต้องของข้อมูลและจำกัดความยาว
     if (!answers || typeof answers !== 'object') {
       return res.status(400).json({ error: 'ข้อมูลคำตอบไม่ถูกต้อง' });
     }
@@ -60,39 +71,34 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'ข้อมูลยาวเกินกำหนด' });
     }
 
-    // ตรวจคะแนนข้อ 3-14
     let score = 0;
     const wrongQuestions = [];
     for (const [q, correctAns] of Object.entries(ANSWER_KEY)) {
       if (answers[q] === correctAns) {
         score++;
       } else {
-        wrongQuestions.push(`${q.toUpperCase()} (ตอบ ${answers[q] || 'ไม่ตอบ'}, ที่ถูกคือ ${correctAns})`);
+        wrongQuestions.push(`${q.toUpperCase()} (ตอบ ${answers[q] || 'ไม่ตอบ'}, เฉลย ${correctAns})`);
       }
     }
 
     const systemInstruction = `คุณคือ "โค้ชการเงินส่วนบุคคลที่เป็นมิตรและใจดี" สำหรับนักเรียนมัธยมปลาย
-จงวิเคราะห์ผลการทำแบบทดสอบความรู้ทางการเงินและการออมของนักเรียนคนนี้ แล้วตอบกลับเป็นภาษาไทยที่อ่านง่าย เป็นกันเอง และให้กำลังใจ โดยมีโครงสร้างดังนี้เท่านั้น:
-1. สรุปภาพรวม (บอกคะแนนที่ได้ ${score}/12 คะแนน และระดับความเข้าใจภาพรวม)
-2. จุดแข็ง 3 ข้อ (อิงจากหัวข้อที่นักเรียนตอบถูก)
-3. จุดที่ควรปรับปรุงหรือเรียนรู้เพิ่ม 3 ข้อ (อิงจากข้อที่ตอบผิด หรือต่อยอดความรู้ให้ลึกขึ้น)
+วิเคราะห์ผลแบบทดสอบความรู้ทางการเงินและการออมเป็นภาษาไทย กระชับ อ่านง่าย ให้กำลังใจ โดยใช้โครงสร้างนี้เท่านั้น:
+1. สรุปภาพรวม (ระบุคะแนน ${score}/12 คะแนน และระดับความเข้าใจ)
+2. จุดแข็ง 3 ข้อ (อิงจากหัวข้อที่ตอบถูก)
+3. จุดที่ควรเรียนรู้เพิ่ม 3 ข้อ (อิงจากข้อที่ตอบผิดหรือต่อยอดความรู้)
 4. แนวทางปฏิบัติ 5 ข้อที่ทำได้จริงในวัยเรียน
-5. คำเตือนปิดท้ายว่า: "หมายเหตุ: ข้อมูลนี้เป็นคำแนะนำเบื้องต้นเพื่อการศึกษาเท่านั้น ไม่ใช่คำแนะนำทางการเงินจากผู้เชี่ยวชาญ"
+5. ปิดท้ายด้วย: "หมายเหตุ: ข้อมูลนี้เป็นคำแนะนำเบื้องต้นเพื่อการศึกษาเท่านั้น ไม่ใช่คำแนะนำทางการเงินจากผู้เชี่ยวชาญ"
 
-เงื่อนไขสำคัญ: ความยาวทั้งหมดต้องไม่เกิน 400 คำ และห้ามขอหรือบันทึกข้อมูลส่วนตัวเพิ่มเติม`;
+เงื่อนไข: ความยาวไม่เกิน 350 คำ และห้ามขอหรือบันทึกข้อมูลส่วนตัวเพิ่มเติม`;
 
     const userPrompt = `ข้อมูลนักเรียน:
 - ระดับชั้น: ${answers.q1 || 'ไม่ระบุ'}
 - เพศ: ${answers.q2 || 'ไม่ระบุ'}
-- คะแนนที่ได้: ${score} เต็ม 12 คะแนน
-- ข้อที่ตอบผิด: ${wrongQuestions.length > 0 ? wrongQuestions.join(', ') : 'ไม่มี (ตอบถูกทุกข้อ)'}`;
+- คะแนน: ${score}/12 คะแนน
+- ข้อที่ผิด: ${wrongQuestions.length > 0 ? wrongQuestions.join(', ') : 'ไม่มี (ถูกทุกข้อ)'}`;
 
-    const response = await generateWithFallback(userPrompt, {
-      systemInstruction: systemInstruction,
-      temperature: 0.7,
-    });
-
-    return res.status(200).json({ advice: response.text });
+    const advice = await generateWithFallback(userPrompt, systemInstruction);
+    return res.status(200).json({ advice });
   } catch (error) {
     console.error('Gemini API Error:', error);
     return res.status(500).json({ error: 'ระบบ AI ขัดข้องชั่วคราว กรุณาลองใหม่อีกครั้ง' });
